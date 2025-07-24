@@ -12,6 +12,7 @@
     "axios": "^1.10.0",
     "element-plus": "^2.10.4",
     "pinia": "^3.0.3",
+    "sass": "^1.89.2",
     "vue": "^3.5.17",
     "vue-router": "^4.5.1"
   },
@@ -19,6 +20,7 @@
     "@types/node": "^24.0.14",
     "@vitejs/plugin-vue": "^6.0.0",
     "@vue/tsconfig": "^0.7.0",
+    "prettier": "^3.6.2",
     "typescript": "~5.8.3",
     "vite": "^7.0.4",
     "vue-eslint-parser": "^10.2.0",
