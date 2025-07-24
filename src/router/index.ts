@@ -7,46 +7,43 @@ const routes = [
     component: () => import('@/views/Main.vue'),
     children: [
       {
-        path: '',
+        path: '', // 默认子路由
         name: 'home',
-        component: () => import('@/views/main/Home.vue'),
+        component: () => import('@/views/main/Home.vue'), // 布局组件
+        redirect: { name: 'all' },
         children: [
           {
-            path: '',
-            redirect: { name: 'all' }
-          },
-          {
-            path: '/all',
+            path: '', // 默认内容
             name: 'all',
             component: () => import('@/views/main/home/All.vue')
           },
           {
-            path: '/picture',
+            path: 'picture',
             name: 'picture',
             component: () => import('@/views/main/home/Picture.vue')
           },
           {
-            path: '/video',
+            path: 'video',
             name: 'video',
             component: () => import('@/views/main/home/Video.vue')
           },
           {
-            path: '/document',
+            path: 'document',
             name: 'document',
             component: () => import('@/views/main/home/Document.vue')
           },
           {
-            path: '/audio',
+            path: 'audio',
             name: 'audio',
             component: () => import('@/views/main/home/Audio.vue')
           },
           {
-            path: '/other',
+            path: 'other',
             name: 'other',
             component: () => import('@/views/main/home/Other.vue')
           },
           {
-            path: '/recycle',
+            path: 'recycle',
             name: 'recycle',
             component: () => import('@/views/main/home/RecycleBin.vue')
           }

@@ -6,29 +6,29 @@
       <!-- 真·文件列表 -->
       <el-row>
         <el-col>
-          <el-scrollbar height="82vh">
-            <!-- 排序工具栏 -->
-            <el-row align="middle">
+          <!-- 排序工具栏 -->
+          <el-row align="middle">
+            <el-col :span="2">
+              <el-checkbox
+                :model="checkAll"
+                :indeterminate="isIndeterminate"
+                @change="handleCheckAllChange"
+              />
+            </el-col>
+            <el-col :span="10">文件名</el-col>
+            <el-col :span="4">大小</el-col>
+            <el-col :span="4">类型</el-col>
+            <el-col :span="4">修改时间</el-col>
+          </el-row>
+          <el-scrollbar height="80vh" @end-reached="getFiles">
+            <el-row class="file" v-for="file in files" :key="file.id" align="middle">
               <el-col :span="2">
-                <el-checkbox
-                  v-model="checkAll"
-                  :indeterminate="isIndeterminate"
-                  @change="handleCheckAllChange"
-                />
+                <el-checkbox :model="checkedFiles" :label="file.id"><br /></el-checkbox>
               </el-col>
-              <el-col :span="10">文件名</el-col>
-              <el-col :span="4">大小</el-col>
-              <el-col :span="4">类型</el-col>
-              <el-col :span="4">修改时间</el-col>
-            </el-row>
-            <el-row class="file" v-for="file in files" :key="file" align="middle">
-              <el-col :span="2">
-                <el-checkbox v-model="checkedFiles" :label="file"><br /></el-checkbox>
-              </el-col>
-              <el-col :span="10">{{ file }}</el-col>
-              <el-col :span="4">大小</el-col>
-              <el-col :span="4">类型</el-col>
-              <el-col :span="4">修改时间</el-col>
+              <el-col :span="10">{{ file.name }}</el-col>
+              <el-col :span="4">{{ file.size }}</el-col>
+              <el-col :span="4">{{ file.type }}</el-col>
+              <el-col :span="4">{{ file.updateTime }}</el-col>
             </el-row>
           </el-scrollbar>
         </el-col>
@@ -39,9 +39,13 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, watch } from 'vue'
+import type { ScrollbarDirection } from 'element-plus'
+import { nanoid } from 'nanoid'
+import { onMounted, ref, watch } from 'vue'
 
-// 当前选中的文件列表
+// =============变量区域=============
+
+// 当前选中的文件 ID
 const checkedFiles = ref<string[]>([])
 
 // 全选框的状态
@@ -49,13 +53,31 @@ const checkAll = ref(false)
 // 半选状态
 const isIndeterminate = ref(false)
 
-// 假设你有 80 个文件，用数组模拟
-const files = ref(Array.from({ length: 80 }, (_, i) => `文件-${i + 1}`))
+// 查询到的文件数组
+const files = ref<{ id: string; name: string; size: string; type: string; updateTime: string }[]>(
+  []
+)
+
+// =============钩子区域=============
+onMounted(() => {
+  console.log('发起请求')
+  for (let i = 0; i < 50; i++) {
+    files.value.push({
+      id: nanoid(10),
+      name: i + '_TestFileName_' + nanoid(6),
+      size: '32MB',
+      type: '未知',
+      updateTime: '未知'
+    })
+  }
+})
+
+// =============函数区域=============
 
 // 全选操作
 const handleCheckAllChange = (val: boolean) => {
   if (val) {
-    checkedFiles.value = [...files.value] // 全选
+    checkedFiles.value = files.value.map((file) => file.id)
   } else {
     checkedFiles.value = [] // 取消全选
   }
@@ -69,6 +91,24 @@ const handleCheckedFilesChange = (value: string[]) => {
   isIndeterminate.value = checkedCount > 0 && checkedCount < files.value.length
 }
 
+// 模拟请求
+const getFiles = (direction: ScrollbarDirection) => {
+  if (direction === 'bottom') {
+    console.log('发起请求')
+    const num = files.value.length
+    for (let i = num; i < num + 20; i++) {
+      files.value.push({
+        id: nanoid(10),
+        name: i + '_TestFileName_' + nanoid(6),
+        size: '32MB',
+        type: '未知',
+        updateTime: '未知'
+      })
+    }
+  }
+}
+
+// =============监听区域=============
 watch(
   () => checkedFiles.value,
   (newVal) => {
