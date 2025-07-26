@@ -2,7 +2,7 @@
   <el-row class="content">
     <el-col class="fileList" :span="19">
       <!-- 路径栏 -->
-      <el-row class="path" align="middle"> /root/xxx/xxxx/xxxx </el-row>
+      <el-row class="path" align="middle"> {{ pathNow }} </el-row>
       <!-- 真·文件列表 -->
       <el-row>
         <el-col>
@@ -10,7 +10,7 @@
           <el-row align="middle">
             <el-col :span="2">
               <el-checkbox
-                :model="checkAll"
+                v-model="checkAll"
                 :indeterminate="isIndeterminate"
                 @change="handleCheckAllChange"
               />
@@ -20,16 +20,18 @@
             <el-col :span="4">类型</el-col>
             <el-col :span="4">修改时间</el-col>
           </el-row>
-          <el-scrollbar height="80vh" @end-reached="getFiles">
-            <el-row class="file" v-for="file in files" :key="file.id" align="middle">
-              <el-col :span="2">
-                <el-checkbox :model="checkedFiles" :label="file.id"><br /></el-checkbox>
-              </el-col>
-              <el-col :span="10">{{ file.name }}</el-col>
-              <el-col :span="4">{{ file.size }}</el-col>
-              <el-col :span="4">{{ file.type }}</el-col>
-              <el-col :span="4">{{ file.updateTime }}</el-col>
-            </el-row>
+          <el-scrollbar height="80vh" @end-reached="getFileList">
+            <el-checkbox-group v-model="checkedFiles">
+              <el-row class="file" v-for="file in files" :key="file.id" align="middle">
+                <el-col :span="2">
+                  <el-checkbox :value="file.id" />
+                </el-col>
+                <el-col :span="10">{{ file.name + file.suffix }}</el-col>
+                <el-col :span="4">{{ file.size === 0 ? '-' : formatFileSize(file.size) }}</el-col>
+                <el-col :span="4">{{ formatFileType(file.type) }}</el-col>
+                <el-col :span="4">{{ formatTime(file.update) }}</el-col>
+              </el-row>
+            </el-checkbox-group>
           </el-scrollbar>
         </el-col>
       </el-row>
@@ -39,37 +41,47 @@
 </template>
 
 <script lang="ts" setup>
+import { useApiStore } from '@/store/api'
 import type { ScrollbarDirection } from 'element-plus'
-import { nanoid } from 'nanoid'
 import { onMounted, ref, watch } from 'vue'
+
+// =============Pinia=============
+const api = useApiStore()
 
 // =============变量区域=============
 
 // 当前选中的文件 ID
 const checkedFiles = ref<string[]>([])
-
 // 全选框的状态
 const checkAll = ref(false)
 // 半选状态
 const isIndeterminate = ref(false)
-
 // 查询到的文件数组
-const files = ref<{ id: string; name: string; size: string; type: string; updateTime: string }[]>(
-  []
-)
+interface PanFile {
+  id: string
+  hash: string
+  type: number
+  name: string
+  suffix: string
+  size: number
+  status: number
+  create: number
+  update: number
+  read: number
+  download: number
+  directory: string
+  path: string
+}
+const files = ref<PanFile[]>([])
+// 当前页面路径
+const pathNow = ref('\\')
+// 当前页码
+const page = ref(1)
 
 // =============钩子区域=============
-onMounted(() => {
-  console.log('发起请求')
-  for (let i = 0; i < 50; i++) {
-    files.value.push({
-      id: nanoid(10),
-      name: i + '_TestFileName_' + nanoid(6),
-      size: '32MB',
-      type: '未知',
-      updateTime: '未知'
-    })
-  }
+onMounted(async () => {
+  const response = await api.file.read(pathNow.value, 50, page.value)
+  files.value = response.data
 })
 
 // =============函数区域=============
@@ -92,20 +104,55 @@ const handleCheckedFilesChange = (value: string[]) => {
 }
 
 // 模拟请求
-const getFiles = (direction: ScrollbarDirection) => {
+const getFileList = async (direction: ScrollbarDirection) => {
   if (direction === 'bottom') {
-    console.log('发起请求')
-    const num = files.value.length
-    for (let i = num; i < num + 20; i++) {
-      files.value.push({
-        id: nanoid(10),
-        name: i + '_TestFileName_' + nanoid(6),
-        size: '32MB',
-        type: '未知',
-        updateTime: '未知'
-      })
-    }
+    page.value++
+    console.log(`发起请求，路径${pathNow.value}`)
+    const response = await api.file.read(pathNow.value, 50, page.value)
+    files.value.push(response.data)
   }
+}
+
+// 格式化
+const formatFileType = (type: string | number): string => {
+  const map: { [key: string]: string } = {
+    '-1': '文件夹',
+    '0': '其他',
+    '1': '图片',
+    '2': '视频',
+    '3': '音频',
+    '4': '文档',
+    '5': '压缩包'
+  }
+  return map[type.toString()] || '未知'
+}
+
+// 格式化
+const formatFileSize = (sizeInKB: number): string => {
+  if (sizeInKB < 1024) {
+    return `${sizeInKB} KB`
+  }
+  const sizeInMB = sizeInKB / 1024
+  if (sizeInMB < 1024) {
+    return `${sizeInMB.toFixed(2)} MB`
+  }
+  const sizeInGB = sizeInMB / 1024
+  return `${sizeInGB.toFixed(2)} GB`
+}
+
+// 格式化
+const formatTime = (timestamp: number): string => {
+  const date = new Date(timestamp)
+  const year = date.getFullYear()
+  const month = date.getMonth() + 1 // 月份从 0 开始
+  const day = date.getDate()
+  const hours = date.getHours()
+  const minutes = date.getMinutes()
+
+  // 补零函数
+  const padZero = (num: number): string => (num < 10 ? `0${num}` : `${num}`)
+
+  return `${year}-${month}-${day} ${padZero(hours)}:${padZero(minutes)}`
 }
 
 // =============监听区域=============
@@ -142,5 +189,6 @@ a:hover {
 .file {
   margin-top: 10px;
   margin-bottom: 10px;
+  font-size: 1rem;
 }
 </style>
